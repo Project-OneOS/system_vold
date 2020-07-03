@@ -34,11 +34,15 @@ static const char* kMkfsPath = "/system/bin/mkfs.exfat";
 static const char* kFsckPath = "/system/bin/fsck.exfat";
 
 bool IsSupported() {
-    return access(kMkfsPath, X_OK) == 0 && access(kFsckPath, X_OK) == 0 &&
-           IsFilesystemSupported("exfat");
+    return IsFilesystemSupported("exfat");
 }
 
 status_t Check(const std::string& source) {
+    if (access(kFsckPath, X_OK)) {
+        LOG(WARNING) << "Missing fsck.exfat, skipping check...";
+        return 0;
+    }
+
     std::vector<std::string> cmd;
     cmd.push_back(kFsckPath);
     cmd.push_back(source);
@@ -56,7 +60,7 @@ status_t Check(const std::string& source) {
 
 status_t Mount(const std::string& source, const std::string& target, int ownerUid, int ownerGid,
                int permMask) {
-    int mountFlags = MS_NODEV | MS_NOSUID | MS_DIRSYNC | MS_NOATIME | MS_NOEXEC;
+    int mountFlags = MS_NODEV | MS_NOSUID | MS_NOATIME | MS_NOEXEC;
     auto mountData = android::base::StringPrintf("uid=%d,gid=%d,fmask=%o,dmask=%o", ownerUid,
                                                  ownerGid, permMask, permMask);
 
